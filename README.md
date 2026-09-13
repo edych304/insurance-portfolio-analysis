@@ -1,8 +1,8 @@
 # Insurance Portfolio Analysis
 
-An insurance portfolio analysis using **R, SQL and DuckDB**.
+An insurance portfolio analysis using R, SQL and DuckDB.
 
-The project investigates how **claim frequency, claim severity and burning cost** differ across portfolio segments, focusing on:
+The project investigates how claim frequency, claim severity and burning cost differ across portfolio segments, focusing on:
 
 - Driver age
 - Geography
