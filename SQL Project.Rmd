@@ -1,0 +1,127 @@
+---
+title: "Claim frequency and burning cost across portfolio segments"
+author: "Edward Y. Chen"
+output: pdf_document
+---
+
+## 1. Data
+
+`dataCar` contains 67,856 one-year vehicle insurance policies taken out in 2004 or 2005, including exposure $e_i$ (`exposure`), claim counts $n_i$ (`numclaims`) and claim amounts (`claimcst0`) $X_i$.
+
+All portfolio calculations are performed in SQL.
+
+## 2. Goal
+
+The aim is to investigate how claim frequency, claim severity, and burning cost differ across portfolio segments, focusing specifically on driver age, geography, and vehicle value. For each segment, we calculate
+
+$$\text{frequency} = \frac{\sum n_i}{\sum e_i}, \quad \text{severity} = \frac{\sum{X_i}}{\sum{n_i}}, \quad \text{burning cost} = \frac{\sum{X_i}}{\sum{e_i}}.$$
+
+## 3. Setup
+
+First, we grab the packages and the data set `dataCar` from `insuranceData`:
+
+```{r, message = FALSE, warning = FALSE}
+library(insuranceData); library(duckdb); library(DBI); library(knitr)
+
+data(dataCar)
+```
+
+Then, we start a database `DB` and copy `dataCar` into it. We also define the shortcut `SC` that sends SQL to `DB` and gives back the result as a data frame (it enables us to write SQL queries in R):
+
+```{r, message = FALSE, warning = FALSE}
+DB <- dbConnect(duckdb())
+dbWriteTable(DB, "policies", dataCar, overwrite = TRUE)
+
+SC <- function(sql) dbGetQuery(DB, sql)
+```
+
+## 4. Portfolio overview
+
+Below is an overview of the portfolio. It contains 31,800.8 exposure years and 4,937 claims corresponding to a claim frequency of 0.1552 claims per exposure-year and a burning cost of 292.90 per exposure-year.
+
+```{r}
+SC("SELECT
+   COUNT(*) AS policies,
+   SUM(exposure) AS exposure_years,
+   SUM(numclaims) AS claims,
+   sum(claimcst0) AS total_cost,
+   SUM(numclaims)/SUM(exposure) AS frequency,
+   SUM(claimcst0)/SUM(numclaims) AS severity,
+   SUM(claimcst0)/SUM(exposure) AS burning_cost
+   FROM policies;")
+```
+
+## 5. Driver age
+
+How does claims cost vary across driver age groups? Looking at the table below, we see that the burning cost falls from 500.47 in the youngest age category (`agecat = 1`) to 205.26 in the oldest age category (`agecat = 6`). The lowest burning cost is observed in category 5 at 205.26.
+
+The difference is driven by both components: group 1 has both higher claim frequency and severity.
+
+```{r}
+SC("SELECT agecat,
+   SUM(exposure) AS exposure,
+   SUM(numclaims) AS claims,
+   SUM(numclaims)/SUM(exposure) AS frequency,
+   SUM(claimcst0)/SUM(numclaims) AS severity,
+   SUM(claimcst0)/SUM(exposure) AS burning_cost
+   FROM policies
+   GROUP BY agecat
+   ORDER BY agecat;")
+```
+
+## 6. Geography
+
+Do claims costs differ substantially between geographical areas? Looking at the table below, we see that Area F stands out with a burning cost of 461.96, which is substantially above the other areas.
+
+Unlike the age effect, this difference is primarily driven by severity: Area F has a frequency only moderately above the portfolio average, but its average claim is substantially more expensive.
+
+```{r}
+SC("SELECT
+   area, 
+   SUM(exposure) AS exposure,
+   SUM(numclaims) AS claims,
+   SUM(numclaims)/SUM(exposure) AS frequency,
+   sum(claimcst0)/SUM(numclaims) AS severity,
+   SUM(claimcst0)/SUM(exposure) AS burning_cost
+   FROM policies
+   GROUP BY area
+   ORDER BY burning_cost DESC;")
+```
+
+## 7. Vehicle value
+
+How does vehicle value relate to claims cost? Looking at the table below, we see that burning cost increases consistently with vehicle value, from 267.82 to 331.53.
+
+The increase is driven by claim frequency rather than severity. More valuable vehicles in this portfolio generate claims more frequently, while their average claim costs remain relatively stable.
+
+```{r}
+SC("SELECT
+   CASE
+   WHEN veh_value < 1 THEN '0-1'
+   WHEN veh_value < 2 THEN '1-2'
+   WHEN veh_value < 3 THEN '2-3'
+   ELSE '3+'
+   END AS value_band,
+   SUM(exposure) as exposure,
+   SUM(numclaims) AS claims,
+   SUM(numclaims)/SUM(exposure) AS frequency,
+   SUM(claimcst0)/SUM(numclaims) AS severity,
+   SUM(claimcst0)/SUM(exposure) AS burning_cost
+   FROM policies
+   GROUP BY value_band
+   ORDER BY value_band;")
+```
+
+## 8. Conclusion
+
+Three distinct patterns emerge from the analysis:
+
+- Driver age: Burning cost generally decreases with age, driven by both lower frequency and lower severity.
+
+- Geography: Area F has particularly high burning cost, driven primarily by claim severity.
+
+- Vehicle value: Higher vehicle values are associated with higher burning cost, driven primarily by claim frequency.
+
+This illustrates analysis benefits from separating frequency and severity rather than looking only at total claims cost. Different segments can have similar overall risk for fundamentally different reasons.
+
+The analysis is descriptive and does not establish causal relationships between the characteristics and claims costs. The variables may also interact with one another, so further modelling would be required to isolate their individual effects.
