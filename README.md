@@ -8,7 +8,7 @@ The project investigates how claim frequency, claim severity and burning cost di
 - Geography
 - Vehicle value
 
-The analysis uses the `dataCar` dataset and performs the portfolio calculations directly in SQL.
+The analysis uses the `dataCar` dataset from `insuranceData` and performs the portfolio calculations directly in SQL.
 
 ## Key findings
 
