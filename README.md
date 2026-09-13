@@ -19,4 +19,4 @@ The analysis uses the `dataCar` dataset and performs the portfolio calculations 
 ## Files
 
 - `SQL-Project.pdf` — the finished analysis
-- `SQL-Project.Rmd` — R Markdown source containing the analysis and SQL queries
+- `SQL Project.Rmd` — R Markdown source containing the analysis and SQL queries
