@@ -18,5 +18,5 @@ The analysis uses the `dataCar` dataset and performs the portfolio calculations 
 
 ## Files
 
-- `Insurance Portfolio Analysis.pdf` — the finished analysis
-- `Insurance Portfolio Analysis.Rmd` — R Markdown source containing the analysis and SQL queries
+- `Analysis.pdf` — the finished analysis
+- `Analysis.Rmd` — R Markdown source containing the analysis and SQL queries
